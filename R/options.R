@@ -163,7 +163,7 @@ analysisOptionsFromJASPfile <- function(file) {
   options <- vector("list", length(analyses))
   for (i in seq_along(analyses)) {
     analysis <- analyses[[i]]
-    options[[i]] <- analysis[["options"]]
+    options[[i]] <- fixOptionsForVariableTypes(analysis[["options"]])
     attr(options[[i]], "analysisName") <- analysis[["name"]]
   }
 
@@ -171,4 +171,22 @@ analysisOptionsFromJASPfile <- function(file) {
     options <- options[[1]]
 
   return(options)
+}
+
+fixOptionsForVariableTypes <- function(options) {
+
+  # jasp does this change internally before passing the options to R.
+  # however, when reading the options from a file this hasn't been done yet
+
+  meta <- options[[".meta"]]
+  if (is.null(meta))
+    return(options)
+
+  nms2fix <- names(vapply(meta, \(x) isTRUE(x[["hasTypes"]]), logical(1L)))
+  for (nm in nms2fix) {
+    options[[paste0(nm, ".types")]] <- options[[nm]][["types"]]
+    options[[nm]]                   <- options[[nm]][["value"]]
+  }
+  return(options)
+
 }
